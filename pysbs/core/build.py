@@ -31,10 +31,15 @@ class BuildManager:
     def __init__(self, last_step : 'BuildStep') -> None:
         self.last_step = last_step
         self.to_update = []
+        self.update_ids = set()
 
     def build(self):
-        self.to_update = []
-        self._make_update_list(self.last_step)
+
+        self.make_update_list()
+
+        if len(self.to_update) == 0:
+            print('All up to date')
+            return
 
         try:
             with alive_bar(len(self.to_update), enrich_print=False) as bar:
@@ -53,29 +58,43 @@ class BuildManager:
             print(BUILD_FAILED_MSG)
 
 
-    def _make_update_list(self, step : 'BuildStep'):
-        for i in step.dependencies:
-            self._make_update_list(i)
+    def make_update_list(self):
+        self.to_update = []
+        self.update_ids = set()
+        self._make_update_list(self.last_step)
 
-        if step.input_version != step.last_time_input_version or step.did_fail_last_time:
+
+    def _make_update_list(self, step : 'BuildStep') -> bool:
+
+        any_deps_changed = False
+
+        for i in step.dependencies:
+            this_changed = self._make_update_list(i)
+            any_deps_changed = any_deps_changed or this_changed
+
+        if (any_deps_changed or
+                step.input_version != step.last_time_input_version or
+                step.did_fail_last_time) and step.step_id not in self.update_ids:
             self.to_update.append(step)
+            self.update_ids.add(step.step_id)
+            return True
+        return False
 
     def _run(self, step : 'BuildStep'):
-        if step.input_version != step.last_time_input_version:
+        if step.did_fail_last_time:
+            print(step.last_time_fail_message)
+            raise BuildError()
+        else:
             step._bump_version()
+            step._reset_error()
             try:
                 step.run()
             except Exception as ex:
                 step.print(traceback.format_exc())
                 step.fail()
+        
+            if step._failed:
                 raise BuildError()
-        elif step.did_fail_last_time:
-            print(step.last_time_fail_message)
-            raise BuildError()
-        else:
-            raise RuntimeError('Cannot determine why this was ran...')
-
-         
 
 
 

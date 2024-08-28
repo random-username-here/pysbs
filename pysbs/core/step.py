@@ -3,6 +3,7 @@ __all__ = ["BuildStep"]
 from typing import Type, Callable, Optional
 from . import config
 
+# Version returned by 
 
 class _BuildStepMetaclass(type):
     """
@@ -13,13 +14,12 @@ class _BuildStepMetaclass(type):
     def __call__(self : Type['BuildStep'], *args, **kwargs):
         step = self.__new__(self, *args, **kwargs) 
         step.__init__(*args, **kwargs)
+        step.__init_requiring_props__()
 
-        key = config.escape_key(step.step_id)
+        if step.step_id not in self.by_id:
+            self.by_id[step.step_id] = step
 
-        if key not in self.by_id:
-            self.by_id[key] = step
-
-        return self.by_id[key]
+        return self.by_id[step.step_id]
 
     def __init__(self, name, bases, attributes):
         super().__init__(name, bases, attributes)
@@ -40,7 +40,7 @@ class BuildStep(metaclass=_BuildStepMetaclass):
     dict to see if it is a duplicate. If it is, you will be given already
     created one.
 
-    HACK: for now no persistency, because it is 20:30 and I want to see it run.
+    TODO: clean db from unused steps
     """
 
     by_id : dict[str, 'BuildStep']
@@ -51,7 +51,11 @@ class BuildStep(metaclass=_BuildStepMetaclass):
 
     __m_name : str
     __m_name_hook : Optional[Callable[[str], None]]
-    hidden : bool
+    __m_ns : config.PersistentNamespace
+    __m_captured_output : str
+
+    INPUT_VERSION_NOT_EXISTENT = ''
+    """Version returned when this step data did not exist on previous run"""
 
     ### User-defined methods ###############################
 
@@ -81,11 +85,15 @@ class BuildStep(metaclass=_BuildStepMetaclass):
 
     ### Internal methods ###################################
 
-    def __init__(self) -> None:
+    def __init__(self, dependencies = []) -> None:
         self.__m_name = ""
         self.__m_name_hook = None
-        self.hidden = False
-        self.dependencies = []
+        self.__m_captured_output = ''
+        self._failed = False
+        self.dependencies = dependencies
+
+    def __init_requiring_props__(self):
+        self.__m_ns = config.get_database().get_ns('steps').get_ns(self.step_id)
 
     @property
     def name(self):
@@ -97,17 +105,20 @@ class BuildStep(metaclass=_BuildStepMetaclass):
         if self._name_hook != None:
             self._name_hook(v)
 
-
     @property
     def _name_hook(self):
         return self.__m_name_hook
-
 
     @_name_hook.setter
     def _name_hook(self, hook):
         self.__m_name_hook = hook
         if hook is not None:
             hook(self.name)
+
+    @property
+    def ns(self):
+        """Namespace for storing data of this step."""
+        return self.__m_ns
 
     def fail(self):
         """
@@ -116,8 +127,9 @@ class BuildStep(metaclass=_BuildStepMetaclass):
         printed next time build will be run without this
         inputs changing.
         """
-        return # HACK
-        raise NotImplementedError
+        self.ns['has_failed'] = True
+        self.ns['fail_message'] = self.__m_captured_output
+        self._failed = True
 
     def print(self, *vals, sep=' ', end='\n'):
         """
@@ -126,35 +138,39 @@ class BuildStep(metaclass=_BuildStepMetaclass):
         step failed previous time, and nothing changed.
         """
         print(*vals, sep=sep, end=end)
-        return # FIXME: save output
-        raise NotImplementedError
+        self.__m_captured_output += str(sep).join(map(str, vals)) + end
 
     @property
     def last_time_input_version(self) -> str:
         """
         Input version this was run last time with
         """
-        return '' # HACK
-        raise NotImplementedError
+        return self.ns.get('last_time_input_version', self.INPUT_VERSION_NOT_EXISTENT)
 
     @property
-    def did_fail_last_time(self):
+    def did_fail_last_time(self) -> bool:
         """
         Did this step fail last time it was run?
         """
-        return False # HACK
-        raise NotImplementedError
+        return self.ns.get('has_failed', False)
 
     @property
     def last_time_fail_message(self):
-        raise NotImplementedError
+        return self.ns.get('fail_message', '')
 
     def _bump_version(self):
         """
         Update last input version.
         """
-        return # HACK
-        raise NotImplementedError
+        self.ns['last_time_input_version'] = self.input_version
+
+    def _reset_error(self):
+        """
+        Reset error stored in persistent storage
+        """
+        self.ns['has_failed'] = False
+        self.ns['fail_message'] = ''
+        self._failed = False
 
 class Foo(BuildStep):
     pass
