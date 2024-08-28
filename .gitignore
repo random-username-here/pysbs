@@ -6,3 +6,6 @@ __pycache__/
 
 # LSP-related stuff
 pyrightconfig.json
+
+# Build stuff
+*.db
