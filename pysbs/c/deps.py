@@ -2,7 +2,7 @@ import os.path
 from pathlib import Path
 import re
 
-from alive_progress.core.hook_manager import logging
+import logging
 from pysbs.c.project import CProject
 from pysbs.core.step import BuildStep
 from pysbs.misc.include_finder import find_includes, ExcludedZoneSpec

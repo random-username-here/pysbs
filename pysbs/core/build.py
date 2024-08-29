@@ -9,13 +9,13 @@ ESC_GRAY = '\x1b[90m' #]
 ESC_RESET = '\x1b[0m' #]
 HEADER_PREFIX = '----[ ' #]
 HEADER_SUFFIX = ' ]' 
-HEADER_LEN = 80
+HEADER_LEN = 120
 
 BUILD_FAILED_MSG = '\n\nBuild failed'
 
 def print_hader(name : str):
     print()
-    filler_len = HEADER_LEN - len(HEADER_PREFIX) - len(HEADER_SUFFIX)
+    filler_len = HEADER_LEN - len(name) - len(HEADER_PREFIX) - len(HEADER_SUFFIX)
     print(ESC_GRAY + HEADER_PREFIX + ESC_RESET + 
           name +
           ESC_GRAY + HEADER_SUFFIX + '-' * filler_len + ESC_RESET)
@@ -33,7 +33,7 @@ class BuildManager:
         self.to_update = []
         self.update_ids = set()
 
-    def build(self):
+    async def build(self):
 
         self.make_update_list()
 
@@ -51,7 +51,7 @@ class BuildManager:
                 for i in self.to_update:
 
                     i._name_hook = set_step_name 
-                    self._run(i)
+                    await self._run(i)
                     i._name_hook = None
                     bar()
         except BuildError:
@@ -80,23 +80,19 @@ class BuildManager:
             return True
         return False
 
-    def _run(self, step : 'BuildStep'):
-        if step.did_fail_last_time:
-            print(step.last_time_fail_message)
+    async def _run(self, step : 'BuildStep'):
+        step._bump_version()
+        step._reset_error()
+        try:
+            await step.run()
+        except Exception as ex:
+            print(traceback.format_exc())
+            step.fail()
+    
+        if step._failed:
             raise BuildError()
-        else:
-            step._bump_version()
-            step._reset_error()
-            try:
-                step.run()
-            except Exception as ex:
-                step.print(traceback.format_exc())
-                step.fail()
-        
-            if step._failed:
-                raise BuildError()
 
 
 
-def build(last_step : 'BuildStep'):
-    BuildManager(last_step).build()
+async def build(last_step : 'BuildStep'):
+    await BuildManager(last_step).build()

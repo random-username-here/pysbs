@@ -52,7 +52,6 @@ class BuildStep(metaclass=_BuildStepMetaclass):
     __m_name : str
     __m_name_hook : Optional[Callable[[str], None]]
     __m_ns : config.PersistentNamespace
-    __m_captured_output : str
 
     INPUT_VERSION_NOT_EXISTENT = ''
     """Version returned when this step data did not exist on previous run"""
@@ -77,7 +76,7 @@ class BuildStep(metaclass=_BuildStepMetaclass):
         """
         raise NotImplementedError
 
-    def run(self):
+    async def run(self):
         """
         Run this step. Compile/link/generate something here.
         """
@@ -88,7 +87,6 @@ class BuildStep(metaclass=_BuildStepMetaclass):
     def __init__(self, dependencies = []) -> None:
         self.__m_name = ""
         self.__m_name_hook = None
-        self.__m_captured_output = ''
         self._failed = False
         self.dependencies = list(dependencies)
 
@@ -128,17 +126,7 @@ class BuildStep(metaclass=_BuildStepMetaclass):
         inputs changing.
         """
         self.ns['has_failed'] = True
-        self.ns['fail_message'] = self.__m_captured_output
         self._failed = True
-
-    def print(self, *vals, sep=' ', end='\n'):
-        """
-        Print something.
-        This output is captured and printed again if this
-        step failed previous time, and nothing changed.
-        """
-        print(*vals, sep=sep, end=end)
-        self.__m_captured_output += str(sep).join(map(str, vals)) + end
 
     @property
     def last_time_input_version(self) -> str:
@@ -153,10 +141,6 @@ class BuildStep(metaclass=_BuildStepMetaclass):
         Did this step fail last time it was run?
         """
         return self.ns.get('has_failed', False)
-
-    @property
-    def last_time_fail_message(self):
-        return self.ns.get('fail_message', '')
 
     def _bump_version(self):
         """
