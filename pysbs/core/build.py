@@ -45,8 +45,9 @@ class BuildManager:
             with alive_bar(len(self.to_update), enrich_print=False) as bar:
 
                 def set_step_name(name : str):
-                    print_hader(name)
-                    bar.text(name)
+                    if name:
+                        print_hader(name)
+                        bar.text(name)
 
                 for i in self.to_update:
 

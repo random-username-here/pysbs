@@ -6,6 +6,7 @@ sys.path.append(dirname(dirname(dirname(__file__))))
 from pysbs.core.step import BuildStep
 from pysbs.core.build import build
 from pysbs.core.config import use_database
+import asyncio
 
 class FoobarBuildStep(BuildStep):
 
@@ -22,12 +23,12 @@ class FoobarBuildStep(BuildStep):
     def input_version(self) -> str:
         return str(getmtime(self.file))
 
-    def run(self):
-        self.print(f'Compiling `{self.file}`')
+    async def run(self):
+        print(f'Compiling `{self.file}`')
         with open(self.file, 'r') as f:
             conts = f.read()
             if 'fail' in conts:
-                self.print('Something wrong in the file')
+                print('Something wrong in the file')
                 self.fail()
 
 use_database(join(dirname(__file__), 'pysbs.db'))
@@ -36,4 +37,4 @@ lib = FoobarBuildStep('./src/lib.foobar')
 other = FoobarBuildStep('./src/other.foobar', dependencies=[lib])
 main = FoobarBuildStep('./src/main.foobar', dependencies=[lib, other])
 
-build(main)
+asyncio.run(build(main))

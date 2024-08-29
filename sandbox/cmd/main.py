@@ -33,7 +33,7 @@ async def main():
     use_database(THIS_FOLDER / 'pysbs.db')
 
     source = THIS_FOLDER / 'test.c'
-    output = THIS_FOLDER / 'helloworld'
+    output = THIS_FOLDER / 'helloworld.out'
 
     compilation = CompileStep(output, [source])
 

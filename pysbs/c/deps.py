@@ -31,9 +31,6 @@ class CDependencyStep(BuildStep):
     def __postinit__(self):
         super().__postinit__()
 
-        if self.project.is_not_part_of_project(self.path):
-            return
-
         if self.input_version != self.ns.get('include_cache_version', ''):
             logging.debug(f'Searching includes in {self.path}')
             self.compute_deps()
@@ -43,10 +40,7 @@ class CDependencyStep(BuildStep):
         for i in self.ns['includes']:
             resolved = self.project.resolve_include(self.path, i)
             if resolved:
-                if not self.project.is_not_part_of_project(resolved):
-                    self.dependencies.append(CDependencyStep(self.project, resolved))
-            else:
-                logging.warn(f'Could not resolve include `{i}` in file `{self.path}`')
+                self.dependencies.append(CDependencyStep(self.project, resolved))
 
     def compute_deps(self):
         with open(self.path, 'r') as f:

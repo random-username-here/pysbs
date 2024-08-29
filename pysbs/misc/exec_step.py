@@ -21,12 +21,13 @@ BEST_LINE_WIDTH = 120
 CMD_PREF = f'{ESC_GRAY} $ {ESC_RESET}'
 CMD_ARGS_PREF = f'{ESC_GRAY} :   {ESC_RESET}'
 
-FormatterName = Literal['normal', 'path', 'cflag']
+FormatterName = Literal['normal', 'path', 'cflag', 'include']
 
 FORMATTERS : dict[FormatterName, Callable[[str], str]] = {
         'normal': lambda s : s,
         'path': lambda path : ESC_GREEN + ESC_UNDERLINE + path + ESC_RESET,
-        'cflag': lambda val : ESC_BLUE + val[:2] + ESC_RESET + val[2:]
+        'cflag': lambda val : ESC_BLUE + val[:2] + ESC_RESET + val[2:],
+        'include': lambda val : ESC_BLUE + val[:2] + ESC_RESET + ESC_GREEN + ESC_UNDERLINE + val[2:] + ESC_RESET
 }
 
 @dataclass
@@ -45,7 +46,7 @@ class ExecBuildStep(BuildStep):
     """
 
 
-    def __init__(self, command : str, dependencies=[], args : list[str] = []) -> None:
+    def __init__(self, command : str, dependencies=[], args : list = []) -> None:
         super().__init__(dependencies)
         self.command = command
         self.args = list(args)
