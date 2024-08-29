@@ -9,3 +9,4 @@ pyrightconfig.json
 
 # Build stuff
 *.db
+*.dot

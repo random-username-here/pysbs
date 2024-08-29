@@ -14,9 +14,9 @@ class _BuildStepMetaclass(type):
     def __call__(self : Type['BuildStep'], *args, **kwargs):
         step = self.__new__(self, *args, **kwargs) 
         step.__init__(*args, **kwargs)
-        step.__init_requiring_props__()
 
         if step.step_id not in self.by_id:
+            step.__postinit__()
             self.by_id[step.step_id] = step
 
         return self.by_id[step.step_id]
@@ -90,9 +90,9 @@ class BuildStep(metaclass=_BuildStepMetaclass):
         self.__m_name_hook = None
         self.__m_captured_output = ''
         self._failed = False
-        self.dependencies = dependencies
+        self.dependencies = list(dependencies)
 
-    def __init_requiring_props__(self):
+    def __postinit__(self):
         self.__m_ns = config.get_database().get_ns('steps').get_ns(self.step_id)
 
     @property
