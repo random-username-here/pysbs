@@ -55,3 +55,15 @@ class PersistentNamespace:
     def __setitem__(self, name : str, val : Any):
         self.db[self.prefix + '|' + _esc(name)] = val
         self.db.sync()
+
+    def drop(self):
+        """Delete this namespace with all its child keys"""
+
+        del_list = []
+        for key in self.db:
+            if key.startswith(self.prefix + '|'):
+                del_list.append(key)
+
+        for i in del_list:
+            del self.db[i]
+

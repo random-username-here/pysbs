@@ -70,10 +70,11 @@ def get_node_props(step : BuildStep):
     return []
 
 EXTRA_DOT = """
-layout=fdp;
+layout=dot;
 overlap=false;
 node[fontname="CaskaydiaCove Nerd Font"];
 node[shape=box];
+rankdir=LR;
 """
 
 dot = make_dot_graph(steps, fmt=get_node_label, extra_graph_data=EXTRA_DOT, extra_note_attrs=get_node_props)
