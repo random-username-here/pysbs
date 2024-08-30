@@ -22,5 +22,6 @@ class CLinkingStep(ExecBuildStep):
         self.inputs = inputs
 
     @property
-    def input_version(self) -> str:
-        return json.dumps([os.path.getmtime(i) for i in self.inputs])
+    def input_files(self) -> list[Path]:
+        return self.inputs
+

@@ -1,13 +1,20 @@
 
-# Python stuff
+# --- Python stuff
+
 __pycache__/
 *.py[cod]
 *$py.class
 
-# LSP-related stuff
-pyrightconfig.json
+# --- LSP-related stuff
 
-# Build stuff
+pyrightconfig.json
+# Clangd cache
+.cache
+
+# --- Build stuff
 *.db
 *.dot
 *.out
+*.o
+compile_commands.json
+build/

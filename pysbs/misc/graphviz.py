@@ -2,6 +2,7 @@ from collections.abc import Callable
 
 from alive_progress.core.hook_manager import logging
 from pysbs.core.step import BuildStep
+from pysbs.misc.walk import walk_deps
 
 def ghash(v):
     return 'n_' + str(hash(v)).replace('-', 'm')
@@ -18,14 +19,9 @@ def make_dot_graph(top_steps : list[BuildStep],
     """
 
     result = ""
-    visited = set()
 
     def add_step(s : BuildStep):
         nonlocal result
-
-        if hash(s.step_id) in visited:
-            return
-        visited.add(hash(s.step_id))
 
         logging.debug(f'Generating DOT node for {s.step_id}')
 
@@ -33,14 +29,12 @@ def make_dot_graph(top_steps : list[BuildStep],
         result += f'  {ghash(s.step_id)} [{', '.join(params)}];\n'
 
         for i in s.dependencies:
-            add_step(i)
             result += f'  {ghash(i.step_id)} -> {ghash(s.step_id)};\n'
 
     result += "digraph build_tree {\n" #}
     result += extra_graph_data + '\n'
 
-    for i in top_steps:
-        add_step(i)
+    walk_deps(top_steps, add_step)
 
     result += "}\n"
 

@@ -8,8 +8,9 @@ class CProject:
     and include paths.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, include_paths = []) -> None:
         self.include_paths = [
+            *list(include_paths)
         ]
 
     def resolve_include(self, file : Path, included : str) -> Optional[Path]:
